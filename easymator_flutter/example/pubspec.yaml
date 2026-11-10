@@ -15,6 +15,7 @@ dependencies:
   easymator_core:
     path: ../../easymator_core
   vector_math: ^2.1.4
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easymator_example/main.dart';
 
 void main() {
   testWidgets('Sandbox studio boots up, manages animation library, and supports bone addition and realignment', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
     // Set fixed virtual desktop window size
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1.0;
@@ -102,7 +105,7 @@ void main() {
     expect(find.text('Create New Animation Clip'), findsOneWidget);
 
     await tester.enterText(find.widgetWithText(TextField, 'Clip Name'), 'Ninja Kick');
-    await tester.tap(find.text('Create'));
+    await tester.tap(find.text('Create & Save'));
     await tester.pump(const Duration(milliseconds: 100));
 
     // Verify newly created clip appears in the library!
@@ -127,7 +130,8 @@ void main() {
     expect(resetRigButton, findsOneWidget);
     await tester.ensureVisible(resetRigButton);
     await tester.tap(resetRigButton);
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Rig reset to original factory alignment!'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
 
@@ -145,7 +149,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.textContaining('Thigh (R)'), findsWidgets);
 
-    // 14. Verify View Layers switches
+    // 14. Verify View Layers switches & Pan/Zoom Viewport
+    expect(find.byType(InteractiveViewer), findsOneWidget);
     expect(find.text('Debug Wireframe'), findsOneWidget);
     expect(find.text('Vector Attachments'), findsOneWidget);
     expect(find.text('Interactive IK Mode'), findsOneWidget);

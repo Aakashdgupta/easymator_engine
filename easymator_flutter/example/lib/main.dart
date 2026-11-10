@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 import 'package:easymator_flutter/easymator_flutter.dart';
 
@@ -37,6 +38,8 @@ class SandboxScreen extends StatefulWidget {
 }
 
 class _SandboxScreenState extends State<SandboxScreen> {
+  static const String _storageKeyCustomClips = 'easymator_saved_clips_v1';
+
   late Skeleton _skeleton;
   late List<Slot> _slots;
   late SkeletonController _controller;
@@ -60,7 +63,7 @@ class _SandboxScreenState extends State<SandboxScreen> {
     super.initState();
     _buildCharacterRig();
 
-    // Populate initial animation library
+    // Populate initial animation library with presets
     _animationLibrary = [
       _createPresetWalkClip(),
       _createPresetWaveClip(),
@@ -75,6 +78,41 @@ class _SandboxScreenState extends State<SandboxScreen> {
     );
 
     _applyActiveSkin();
+    _loadCustomClipsFromStorage();
+  }
+
+  /// Restores user-authored clips from device/browser persistent storage
+  Future<void> _loadCustomClipsFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedJsonList = prefs.getStringList(_storageKeyCustomClips);
+      if (savedJsonList != null && savedJsonList.isNotEmpty) {
+        for (final jsonStr in savedJsonList) {
+          try {
+            final clip = AnimationClip.fromJsonString(jsonStr);
+            final existingIdx = _animationLibrary.indexWhere((c) => c.id == clip.id);
+            if (existingIdx >= 0) {
+              _animationLibrary[existingIdx] = clip;
+            } else {
+              _animationLibrary.add(clip);
+            }
+          } catch (_) {}
+        }
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
+  }
+
+  /// Automatically persists all custom user-authored clips to storage
+  Future<void> _saveCustomClipsToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final customClips = _animationLibrary
+          .where((c) => c.id != 'walk' && c.id != 'wave' && c.id != 'idle')
+          .toList();
+      final jsonList = customClips.map((c) => c.toPrettyJson()).toList();
+      await prefs.setStringList(_storageKeyCustomClips, jsonList);
+    } catch (_) {}
   }
 
   /// Builds a fully aligned, anatomically symmetrical 12-bone biped rig.
@@ -208,7 +246,7 @@ class _SandboxScreenState extends State<SandboxScreen> {
     _applyActiveSkin();
     _selectedBoneId = 'upper_arm_r';
     setState(() {});
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Rig reset to original factory alignment!'),
@@ -364,19 +402,22 @@ class _SandboxScreenState extends State<SandboxScreen> {
     );
   }
 
-  // Record a keyframe at the current scrubber timestamp
+  // Record keyframe with BOTH Rotation AND Relocation (Position) for all bones
   void _recordKeyframe() {
     final t = double.parse((_controller.currentTime % _activeClip.duration).toStringAsFixed(2));
 
     for (final bone in _skeleton.bones) {
       final track = _activeClip.getOrCreateTrack(bone.id);
       track.addRotationKey(Keyframe(time: t, value: bone.localRotation));
+      track.addPositionKey(Keyframe(time: t, value: vm.Vector3.copy(bone.localPosition)));
     }
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    _saveCustomClipsToStorage();
+
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Keyframe recorded at ${t.toStringAsFixed(2)}s for ${_skeleton.bones.length} bones!'),
+        content: Text('Keyframe (Rotation & Position) saved at ${t.toStringAsFixed(2)}s for ${_skeleton.bones.length} bones!'),
         duration: const Duration(seconds: 1),
         backgroundColor: const Color(0xFF00E676),
       ),
@@ -384,12 +425,15 @@ class _SandboxScreenState extends State<SandboxScreen> {
     setState(() {});
   }
 
-  // Delete keyframe nearest to current timestamp
+  // Delete keyframe nearest to current timestamp (both rotation and position)
   void _deleteCurrentKeyframe() {
     final t = _controller.currentTime % _activeClip.duration;
     for (final track in _activeClip.tracks) {
       track.rotationKeys.removeWhere((k) => (k.time - t).abs() < 0.05);
+      track.positionKeys.removeWhere((k) => (k.time - t).abs() < 0.05);
     }
+    _saveCustomClipsToStorage();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Keyframe removed near ${t.toStringAsFixed(2)}s'),
@@ -400,7 +444,7 @@ class _SandboxScreenState extends State<SandboxScreen> {
     setState(() {});
   }
 
-  // New clip dialog
+  // New clip dialog - saves to library and persistent storage
   void _showNewClipDialog() {
     final nameController = TextEditingController(text: 'New Clip');
     final durationController = TextEditingController(text: '1.5');
@@ -441,13 +485,32 @@ class _SandboxScreenState extends State<SandboxScreen> {
                 isLooping: true,
                 tracks: [],
               );
+
+              // Automatically record initial rest pose keyframe (rotation and position) at t=0
+              for (final bone in _skeleton.bones) {
+                final track = newClip.getOrCreateTrack(bone.id);
+                track.addRotationKey(Keyframe(time: 0.0, value: bone.localRotation));
+                track.addPositionKey(Keyframe(time: 0.0, value: vm.Vector3.copy(bone.localPosition)));
+              }
+
               setState(() {
                 _animationLibrary.add(newClip);
-                _setActiveClip(newClip);
+                _activeClip = newClip;
+                _controller.setClip(_activeClip);
+                _controller.pause();
+                _controller.seek(0.0);
               });
+              _saveCustomClipsToStorage();
               Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Created and saved "${newClip.name}" with initial t=0.0s keyframe!'),
+                  backgroundColor: const Color(0xFF00E676),
+                ),
+              );
             },
-            child: const Text('Create'),
+            child: const Text('Create & Save'),
           ),
         ],
       ),
@@ -570,10 +633,11 @@ class _SandboxScreenState extends State<SandboxScreen> {
                   }
                   _setActiveClip(clip);
                 });
+                _saveCustomClipsToStorage();
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Successfully imported "${clip.name}" into Library!'),
+                    content: Text('Successfully imported and saved "${clip.name}"!'),
                     backgroundColor: const Color(0xFF00E676),
                   ),
                 );
@@ -745,7 +809,7 @@ class _SandboxScreenState extends State<SandboxScreen> {
                     _selectedBoneId = boneId;
                   });
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).clearSnackBars();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Added bone "${newBone.name}" under "${parentBone?.name}"'),
@@ -789,10 +853,13 @@ class _SandboxScreenState extends State<SandboxScreen> {
   Widget build(BuildContext context) {
     final selectedBone = _selectedBoneId != null ? _skeleton.findBone(_selectedBoneId!) : null;
 
-    // Collect keyframe timestamps for active clip
+    // Collect all keyframe timestamps (both rotation and position) for active clip
     final keyframeTimes = <double>{};
     for (final track in _activeClip.tracks) {
       for (final k in track.rotationKeys) {
+        keyframeTimes.add(k.time);
+      }
+      for (final k in track.positionKeys) {
         keyframeTimes.add(k.time);
       }
     }
@@ -870,93 +937,108 @@ class _SandboxScreenState extends State<SandboxScreen> {
       ),
       body: Row(
         children: [
-          // ------------------ MAIN VIEWPORT ------------------
+          // ------------------ MAIN VIEWPORT (PAN, ZOOM, GRID) ------------------
           Expanded(
             child: ClipRect(
-              child: Stack(
-                children: [
-                  // Interactive Canvas Viewport
-                  Positioned.fill(
-                    child: GestureDetector(
-                      onPanUpdate: _ikMode
-                          ? (details) => _applyIK(details.localPosition)
-                          : null,
-                      child: SkeletonView(
-                        controller: _controller,
-                        showDebugWireframe: _showDebugWireframe,
-                        showAttachments: _showAttachments,
-                        selectedBoneId: _selectedBoneId,
-                        onBoneSelected: (bone) {
-                          setState(() {
-                            _selectedBoneId = bone?.id;
-                          });
-                        },
+              child: Container(
+                color: const Color(0xFF0C0E12),
+                child: Stack(
+                  children: [
+                    // 1. Background Reference Grid
+                    if (_showGrid) const _GridBackground(),
+
+                    // 2. Interactive Viewport with Pan and Zoom
+                    InteractiveViewer(
+                      panEnabled: !_ikMode,
+                      scaleEnabled: true,
+                      boundaryMargin: const EdgeInsets.all(600),
+                      minScale: 0.2,
+                      maxScale: 4.0,
+                      child: SizedBox(
+                        width: 2000,
+                        height: 2000,
+                        child: GestureDetector(
+                          onPanUpdate: _ikMode
+                              ? (details) => _applyIK(details.localPosition)
+                              : null,
+                          child: SkeletonView(
+                            controller: _controller,
+                            showDebugWireframe: _showDebugWireframe,
+                            showAttachments: _showAttachments,
+                            selectedBoneId: _selectedBoneId,
+                            onBoneSelected: (bone) {
+                              setState(() {
+                                _selectedBoneId = bone?.id;
+                              });
+                            },
+                          ),
+                        ),
                       ),
                     ),
-                  ),
 
-                  // Overlay Status Badge
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.75),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF00E676),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${_activeCharacterId.toUpperCase()} • ${_activeViewAngle.name.toUpperCase()} VIEW',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Active Clip: "${_activeClip.name}" (${_activeClip.duration.toStringAsFixed(1)}s)',
-                            style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 12),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Selected Bone: ${_selectedBoneId ?? "Tap limb to select"}',
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Floating IK Handle
-                  if (_ikMode)
+                    // Overlay Status Badge
                     Positioned(
-                      left: _ikTarget.dx - 12,
-                      top: _ikTarget.dy - 12,
-                      child: const Icon(Icons.gps_fixed, color: Colors.amber, size: 24),
+                      top: 16,
+                      left: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF00E676),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${_activeCharacterId.toUpperCase()} • ${_activeViewAngle.name.toUpperCase()} VIEW',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Active Clip: "${_activeClip.name}" (${_activeClip.duration.toStringAsFixed(1)}s)',
+                              style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 12),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Selected Bone: ${_selectedBoneId ?? "Tap limb to select"}',
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
 
-                  // Bottom Timeline / Dope Sheet Bar
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 16,
-                    child: _buildDopeSheetBar(keyframeTimes),
-                  ),
-                ],
+                    // Floating IK Handle
+                    if (_ikMode)
+                      Positioned(
+                        left: _ikTarget.dx - 12,
+                        top: _ikTarget.dy - 12,
+                        child: const Icon(Icons.gps_fixed, color: Colors.amber, size: 24),
+                      ),
+
+                    // Bottom Timeline / Dope Sheet Bar
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: 16,
+                      child: _buildDopeSheetBar(keyframeTimes),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -974,6 +1056,23 @@ class _SandboxScreenState extends State<SandboxScreen> {
                     children: [
                       Expanded(
                         child: _buildSectionHeader('Animation Library (${_animationLibrary.length})'),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.save, size: 16, color: Color(0xFF4A90E2)),
+                        tooltip: 'Save All Clips to Storage',
+                        onPressed: () async {
+                          await _saveCustomClipsToStorage();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('All animation clips saved to persistent storage!'),
+                                backgroundColor: Color(0xFF4A90E2),
+                              ),
+                            );
+                          }
+                        },
                       ),
                       FilledButton.tonalIcon(
                         style: FilledButton.styleFrom(
@@ -1013,6 +1112,25 @@ class _SandboxScreenState extends State<SandboxScreen> {
                         ),
                     ],
                   ),
+                  if (_activeClip.id.startsWith('custom_')) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                          icon: const Icon(Icons.delete_outline, size: 14, color: Colors.redAccent),
+                          label: const Text('Delete Active Clip', style: TextStyle(fontSize: 11, color: Colors.redAccent)),
+                          onPressed: () {
+                            setState(() {
+                              _animationLibrary.remove(_activeClip);
+                              _setActiveClip(_animationLibrary.first);
+                            });
+                            _saveCustomClipsToStorage();
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
 
                   const Divider(height: 32),
 
@@ -1151,7 +1269,7 @@ class _SandboxScreenState extends State<SandboxScreen> {
                             const SizedBox(height: 12),
                           ],
 
-                          // Position X Offset
+                          // Position X Offset (Relocation)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -1193,7 +1311,7 @@ class _SandboxScreenState extends State<SandboxScreen> {
                             },
                           ),
 
-                          // Position Y Offset
+                          // Position Y Offset (Relocation)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -1474,4 +1592,37 @@ class _SandboxScreenState extends State<SandboxScreen> {
       ),
     );
   }
+}
+
+/// Canvas Grid Background Lines
+class _GridBackground extends StatelessWidget {
+  const _GridBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size.infinite,
+      painter: _GridPainter(),
+    );
+  }
+}
+
+class _GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.04)
+      ..strokeWidth = 1.0;
+
+    const step = 40.0;
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
