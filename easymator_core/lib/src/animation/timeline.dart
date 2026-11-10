@@ -33,6 +33,20 @@ class BoneAnimationTrack {
     scaleKeys.sort((a, b) => a.time.compareTo(b.time));
   }
 
+  /// Adds a rotation keyframe, maintaining timestamp ordering.
+  void addRotationKey(Keyframe<double> key) {
+    rotationKeys.removeWhere((k) => (k.time - key.time).abs() < 0.001);
+    rotationKeys.add(key);
+    rotationKeys.sort((a, b) => a.time.compareTo(b.time));
+  }
+
+  /// Adds a position keyframe, maintaining timestamp ordering.
+  void addPositionKey(Keyframe<Vector3> key) {
+    positionKeys.removeWhere((k) => (k.time - key.time).abs() < 0.001);
+    positionKeys.add(key);
+    positionKeys.sort((a, b) => a.time.compareTo(b.time));
+  }
+
   /// Samples local translation at [time] seconds. Writes into [result] if provided.
   Vector3 samplePosition(double time, [Vector3? result]) {
     final out = result ?? Vector3.zero();
@@ -123,5 +137,34 @@ class BoneAnimationTrack {
       }
     }
     return 0;
+  }
+
+  /// Serializes track to JSON.
+  Map<String, dynamic> toJson() {
+    return {
+      'boneId': boneId,
+      if (positionKeys.isNotEmpty)
+        'positionKeys': positionKeys.map((k) => k.toJson()).toList(),
+      if (rotationKeys.isNotEmpty)
+        'rotationKeys': rotationKeys.map((k) => k.toJson()).toList(),
+      if (scaleKeys.isNotEmpty)
+        'scaleKeys': scaleKeys.map((k) => k.toJson()).toList(),
+    };
+  }
+
+  /// Deserializes track from JSON.
+  factory BoneAnimationTrack.fromJson(Map<String, dynamic> json) {
+    return BoneAnimationTrack(
+      boneId: json['boneId'] as String,
+      positionKeys: (json['positionKeys'] as List<dynamic>?)
+          ?.map((k) => Keyframe.fromJsonVector3(k as Map<String, dynamic>))
+          .toList(),
+      rotationKeys: (json['rotationKeys'] as List<dynamic>?)
+          ?.map((k) => Keyframe.fromJsonDouble(k as Map<String, dynamic>))
+          .toList(),
+      scaleKeys: (json['scaleKeys'] as List<dynamic>?)
+          ?.map((k) => Keyframe.fromJsonVector3(k as Map<String, dynamic>))
+          .toList(),
+    );
   }
 }

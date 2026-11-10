@@ -1,3 +1,5 @@
+import 'package:vector_math/vector_math_64.dart';
+
 /// Easing curve applied between keyframes.
 enum EasingCurve {
   linear,
@@ -45,4 +47,57 @@ class Keyframe<T> {
     required this.value,
     this.curve = EasingCurve.linear,
   });
+
+  /// Serializes this keyframe to JSON.
+  Map<String, dynamic> toJson([Object? Function(T)? valueToJson]) {
+    return {
+      'time': double.parse(time.toStringAsFixed(4)),
+      'value': valueToJson != null ? valueToJson(value) : _serializeValue(value),
+      'curve': curve.name,
+    };
+  }
+
+  static Object? _serializeValue(dynamic val) {
+    if (val is Vector3) {
+      return [
+        double.parse(val.x.toStringAsFixed(4)),
+        double.parse(val.y.toStringAsFixed(4)),
+        double.parse(val.z.toStringAsFixed(4)),
+      ];
+    } else if (val is double) {
+      return double.parse(val.toStringAsFixed(4));
+    }
+    return val;
+  }
+
+  /// Deserializes a [Keyframe<double>] from JSON.
+  static Keyframe<double> fromJsonDouble(Map<String, dynamic> json) {
+    final curveStr = json['curve'] as String? ?? 'linear';
+    return Keyframe<double>(
+      time: (json['time'] as num).toDouble(),
+      value: (json['value'] as num).toDouble(),
+      curve: EasingCurve.values.firstWhere(
+        (e) => e.name == curveStr,
+        orElse: () => EasingCurve.linear,
+      ),
+    );
+  }
+
+  /// Deserializes a [Keyframe<Vector3>] from JSON.
+  static Keyframe<Vector3> fromJsonVector3(Map<String, dynamic> json) {
+    final rawVal = json['value'] as List<dynamic>;
+    final curveStr = json['curve'] as String? ?? 'linear';
+    return Keyframe<Vector3>(
+      time: (json['time'] as num).toDouble(),
+      value: Vector3(
+        (rawVal[0] as num).toDouble(),
+        (rawVal[1] as num).toDouble(),
+        rawVal.length > 2 ? (rawVal[2] as num).toDouble() : 0.0,
+      ),
+      curve: EasingCurve.values.firstWhere(
+        (e) => e.name == curveStr,
+        orElse: () => EasingCurve.linear,
+      ),
+    );
+  }
 }

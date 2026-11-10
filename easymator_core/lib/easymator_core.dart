@@ -9,6 +9,7 @@ export 'src/model/skeleton.dart';
 export 'src/model/slot.dart';
 export 'src/model/attachment.dart';
 export 'src/model/skin.dart';
+export 'src/model/character_registry.dart';
 
 export 'src/animation/keyframe.dart';
 export 'src/animation/timeline.dart';

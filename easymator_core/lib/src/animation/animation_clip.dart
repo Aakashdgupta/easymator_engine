@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../model/skeleton.dart';
 import 'timeline.dart';
 
@@ -10,10 +11,10 @@ class AnimationClip {
   String name;
 
   /// Total duration in seconds.
-  final double duration;
+  double duration;
 
   /// Whether the animation loops continuously.
-  final bool isLooping;
+  bool isLooping;
 
   /// Bone animation tracks.
   final List<BoneAnimationTrack> tracks;
@@ -36,6 +37,17 @@ class AnimationClip {
 
   /// Retrieves the animation track for [boneId], or `null` if none.
   BoneAnimationTrack? getTrack(String boneId) => _trackMap[boneId];
+
+  /// Retrieves or creates an animation track for [boneId].
+  BoneAnimationTrack getOrCreateTrack(String boneId) {
+    if (_trackMap.containsKey(boneId)) {
+      return _trackMap[boneId]!;
+    }
+    final track = BoneAnimationTrack(boneId: boneId);
+    tracks.add(track);
+    _trackMap[boneId] = track;
+    return track;
+  }
 
   /// Evaluates and applies the animation poses to [skeleton] at [time] in seconds.
   ///
@@ -68,5 +80,41 @@ class AnimationClip {
     }
 
     skeleton.updateWorldTransforms();
+  }
+
+  /// Serializes this clip to a JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      'version': '1.0',
+      'id': id,
+      'name': name,
+      'duration': double.parse(duration.toStringAsFixed(4)),
+      'isLooping': isLooping,
+      'tracks': tracks.map((t) => t.toJson()).toList(),
+    };
+  }
+
+  /// Formats this clip to a pretty-printed JSON string.
+  String toPrettyJson() {
+    return const JsonEncoder.withIndent('  ').convert(toJson());
+  }
+
+  /// Deserializes an [AnimationClip] from a JSON map.
+  factory AnimationClip.fromJson(Map<String, dynamic> json) {
+    final rawTracks = (json['tracks'] as List<dynamic>?) ?? [];
+    return AnimationClip(
+      id: json['id'] as String? ?? 'custom_clip',
+      name: json['name'] as String? ?? '',
+      duration: (json['duration'] as num?)?.toDouble() ?? 1.0,
+      isLooping: json['isLooping'] as bool? ?? true,
+      tracks: rawTracks
+          .map((t) => BoneAnimationTrack.fromJson(t as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  /// Parses an [AnimationClip] from a raw JSON string.
+  factory AnimationClip.fromJsonString(String jsonStr) {
+    return AnimationClip.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
   }
 }
