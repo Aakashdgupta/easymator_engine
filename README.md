@@ -161,32 +161,6 @@ flutter test
 
 ---
 
-## How to Publish to Pub.dev
-
-Publishing is executed in two simple steps:
-
-### Step 1: Publish `easymator_core`
-```bash
-cd easymator_core
-dart pub publish --dry-run
-dart pub publish
-```
-
-### Step 2: Publish `easymator_flutter`
-Update `easymator_flutter/pubspec.yaml` to point to the published version:
-```yaml
-dependencies:
-  easymator_core: ^0.1.0
-```
-Then publish:
-```bash
-cd easymator_flutter
-flutter pub publish --dry-run
-flutter pub publish
-```
-
----
-
 ## Roadmap
 
 See [`TODO.md`](TODO.md) for current milestones, including:
