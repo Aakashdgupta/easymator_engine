@@ -18,6 +18,10 @@ This backlog outlines completed and upcoming milestones to evolve the engine fro
 ---
 
 ## Milestone 1: UX & Interactive Canvas Manipulation
+- [x] **Task 1.0: Viewport Pan, Zoom & Reference Grid**
+  - Interactive canvas navigation via `InteractiveViewer` with `0.2x` to `4.0x` zoom range and smooth pan.
+  - Multi-tiered background reference grid (`_GridPainter`) with major and minor grid lines.
+  - Smart gesture arbitration: canvas panning automatically suspends when dragging IK handles (`panEnabled: !_ikMode`).
 - [ ] **Task 1.1: Direct On-Canvas Rotation Gizmo**
   - Render an interactive circular arc/wheel handle around the active selected joint directly on the canvas.
   - Allow dragging the handle with mouse/touch to rotate bones interactively rather than relying solely on sidebar sliders.
@@ -39,13 +43,17 @@ This backlog outlines completed and upcoming milestones to evolve the engine fro
 ---
 
 ## Milestone 3: Animation System & Studio Authoring
-- [x] **Task 3.1: Interactive Dope Sheet Timeline**
-  - Render diamond keyframe markers (`◆`) along the timeline track in the sandbox.
-  - Added "+ Record Keyframe" and "- Delete Keyframe" buttons to capture/remove bone poses at current playhead timestamp.
-  - Added "New Custom Clip" authoring dialog.
-- [ ] **Task 3.2: Pose Cross-Fading (Smooth Animation Blending)**
+- [x] **Task 3.1: Interactive Dope Sheet Timeline & Persistent Clips**
+  - Diamond keyframe markers (`◆`) along the timeline track in the sandbox for both rotation and translation (`localPosition`).
+  - Added "+ Record Keyframe" and "- Delete Keyframe" to capture/remove bone poses and translations at current playhead timestamp.
+  - Clip creation and library switcher with auto-save & restore via `shared_preferences`.
+- [x] **Task 3.2: Dynamic Rigging & Bone Realignment Tools**
+  - Dynamic bone creation under any parent joint with length, rotation, offset, and visual capsule shape.
+  - Bone inspector with sliders and fine-step controls for Offset X, Offset Y, Rotation (-180° to +180°), Length, and Reparenting.
+  - 1-click "Reset Rig to Default" factory restore.
+- [ ] **Task 3.3: Pose Cross-Fading (Smooth Animation Blending)**
   - Implement seamless transition blending between clips (e.g. Walk -> Wave) over a configurable duration (e.g., 0.2s) using SLERP to eliminate visual popping.
-- [ ] **Task 3.3: Expanded Motion Preset Library**
+- [ ] **Task 3.4: Expanded Motion Preset Library**
   - Author and bundle:
     - **Idle Breathing** (gentle chest bounce and arm sway, 1.5s loop)
     - **Sprint / Run Cycle** (aggressive forward lean, high knee lifts, 0.6s loop)
@@ -59,5 +67,13 @@ This backlog outlines completed and upcoming milestones to evolve the engine fro
   - Implemented `Keyframe.toJson()` / `fromJson()`, `BoneAnimationTrack.toJson()` / `fromJson()`, and `AnimationClip.toJson()` / `toPrettyJson()` / `fromJson()`.
   - In-sandbox **Export JSON Dialog** with syntax-highlighted preview and 1-click clipboard copy.
   - In-sandbox **Import JSON Dialog** to paste and test custom animation files on any skin.
-- [ ] **Task 4.2: Media Sequence Exporter**
+- [ ] **Task 4.2: Unified Character Package (`.easymator` Bundle)**
+  - Package complete skeleton rig, multi-perspective skins (SVG vector slots), and full animation library (multiple named clips) into a single `.easymator` JSON bundle.
+  - Single-click **"Export Character (.easymator)"** in the Sandbox.
+  - Drag-and-drop / file picker **"Import Character (.easymator)"** in the Sandbox to instantly load any external character.
+  - SVG skin attachment rendering: paint vector SVG paths/shapes aligned to bone pivots with zero pixelation at 120 FPS.
+  - High-level 1-line consuming API for Flutter apps like Easymator:
+    - `final character = await EasymatorCharacter.load('assets/knight.easymator');`
+    - `EasymatorView(character: character)`
+- [ ] **Task 4.3: Media Sequence Exporter**
   - Render animation loops directly to transparent animated PNG / GIF sequences or MP4 video frames.
