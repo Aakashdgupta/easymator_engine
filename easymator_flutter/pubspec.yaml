@@ -3,9 +3,9 @@ description: Flutter rendering bridge, CustomPainters, and widgets for the Easym
 version: 0.1.0
 # publish_to: 'none' # Uncomment during local development if needed, or remove when easymator_core is published
 publish_to: 'none'
-homepage: https://github.com/easymator/easymator_engine
-repository: https://github.com/easymator/easymator_engine/tree/main/easymator_flutter
-issue_tracker: https://github.com/easymator/easymator_engine/issues
+homepage: https://github.com/Aakashdgupta/easymator_engine
+repository: https://github.com/Aakashdgupta/easymator_engine/tree/main/easymator_flutter
+issue_tracker: https://github.com/Aakashdgupta/easymator_engine/issues
 topics:
   - animation
   - skeletal-animation

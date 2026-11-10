@@ -3,7 +3,7 @@
 [![Pub Version](https://img.shields.io/badge/pub-v0.1.0-blue.svg)](https://pub.dev/packages/easymator_core)
 [![Dart SDK](https://img.shields.io/badge/dart-%3E%3D3.0.0-blue.svg)](https://dart.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
-[![Tests Passing](https://img.shields.io/badge/tests-14%2F14%20passing-brightgreen.svg)](https://github.com/easymator/easymator_engine)
+[![Tests Passing](https://img.shields.io/badge/tests-14%2F14%20passing-brightgreen.svg)](https://github.com/Aakashdgupta/easymator_engine)
 
 A high-performance, MIT-licensed 2D skeletal animation, rigging, and inverse kinematics engine written in **pure Dart**. Designed with zero Flutter dependencies, it can be embedded into command-line tools, game engines, backend servers, or front-end Flutter apps via `easymator_flutter`.
 

@@ -3,7 +3,7 @@
 [![Pub Version (Core)](https://img.shields.io/badge/easymator__core-v0.1.0-blue.svg)](https://pub.dev/packages/easymator_core)
 [![Pub Version (Flutter)](https://img.shields.io/badge/easymator__flutter-v0.1.0-blue.svg)](https://pub.dev/packages/easymator_flutter)
 [![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
-[![Tests Passing](https://img.shields.io/badge/tests-all%20passing-brightgreen.svg)](https://github.com/easymator/easymator_engine)
+[![Tests Passing](https://img.shields.io/badge/tests-all%20passing-brightgreen.svg)](https://github.com/Aakashdgupta/easymator_engine)
 
 A clean-room, high-performance, MIT-licensed 2D skeletal puppet rigging, animation, and retargeting engine for Dart and Flutter. 
 

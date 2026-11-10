@@ -1,9 +1,9 @@
 name: easymator_core
 description: High-performance 2D skeletal animation and retargeting engine in pure Dart with zero-allocation math and analytical TwoBoneIK.
 version: 0.1.0
-homepage: https://github.com/easymator/easymator_engine
-repository: https://github.com/easymator/easymator_engine/tree/main/easymator_core
-issue_tracker: https://github.com/easymator/easymator_engine/issues
+homepage: https://github.com/Aakashdgupta/easymator_engine
+repository: https://github.com/Aakashdgupta/easymator_engine/tree/main/easymator_core
+issue_tracker: https://github.com/Aakashdgupta/easymator_engine/issues
 topics:
   - animation
   - skeletal-animation
