@@ -77,3 +77,21 @@ This backlog outlines completed and upcoming milestones to evolve the engine fro
     - `EasymatorView(character: character)`
 - [ ] **Task 4.3: Media Sequence Exporter**
   - Render animation loops directly to transparent animated PNG / GIF sequences or MP4 video frames.
+
+---
+
+## Milestone 5: Character Designer Studio & Action Deck
+- [ ] **Task 5.1: Skin & Visual Slot Inspector (`🎨 Skin Editor`)**
+  - Add a dedicated `🎨 Skin` tab in the studio sidebar for the selected bone.
+  - Real-time controls for shape type (Capsule, Rounded Rect, Circle/Visor, Custom Vector), dimensions (width, height/length), and corner radius.
+  - Color palette & hex controls for Fill Color, Border/Accent Stroke Color, and Opacity.
+  - Multi-angle skinning: configure distinct visual attachments for Front, Side, and Back views per bone.
+- [ ] **Task 5.2: Multi-Clip Action Deck (Play on Demand)**
+  - Interactive Action Bar / Deck in the sandbox allowing 1-click on-demand triggering of animations (Idle, Walk, Wave, Run, custom clips).
+  - Loop toggle, playback speed slider (0.25x to 2x), and smooth transition triggers.
+  - Ability to attach/detach specific animations from the global library into the active character's moveset.
+- [ ] **Task 5.3: Character Profile Manager ("Save Character As..." & Storage)**
+  - Create and save custom character presets with custom names (e.g., "Cyber Ninja", "Mage Apprentice").
+  - Stores complete character bundle: custom skeleton rig + multi-angle visual skins + attached animation list.
+  - Persisted automatically to `shared_preferences` across browser and desktop app sessions.
+  - Header character dropdown switcher listing built-in presets and user-created characters with 1-click switching, duplicating, and deletion.
