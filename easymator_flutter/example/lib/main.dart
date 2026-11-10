@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 import 'package:easymator_flutter/easymator_flutter.dart';
 
@@ -13,14 +14,14 @@ class EasymatorSandboxApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Easymator 2D Skeletal Engine Sandbox',
+      title: 'Easymator 2D Skeletal Studio Sandbox',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF12141A),
+        scaffoldBackgroundColor: const Color(0xFF101216),
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFF4A90E2),
           secondary: Color(0xFF00E676),
-          surface: Color(0xFF1E222D),
+          surface: Color(0xFF1A1D24),
         ),
       ),
       home: const SandboxScreen(),
@@ -38,34 +39,36 @@ class SandboxScreen extends StatefulWidget {
 class _SandboxScreenState extends State<SandboxScreen> {
   late final Skeleton _skeleton;
   late final List<Slot> _slots;
-  late final Skin _knightSkin;
-  late final Skin _robotSkin;
-  late final AnimationClip _walkClip;
-  late final AnimationClip _waveClip;
   late final SkeletonController _controller;
 
+  String _activeCharacterId = 'knight';
+  ViewAngle _activeViewAngle = ViewAngle.front;
   String? _selectedBoneId = 'upper_arm_r';
-  String _activeSkinId = 'knight';
+
   bool _showDebugWireframe = true;
   bool _showAttachments = true;
-  final bool _showGrid = true;
+  bool _showGrid = true;
   bool _ikMode = false;
   Offset _ikTarget = const Offset(280, 220);
+
+  // Active editable clip
+  late AnimationClip _activeClip;
 
   @override
   void initState() {
     super.initState();
     _buildCharacterRig();
-    _buildSkins();
-    _buildAnimations();
+
+    // Default walk cycle
+    _activeClip = _createPresetWalkClip();
 
     _controller = SkeletonController(
       skeleton: _skeleton,
       slots: _slots,
-      initialClip: _walkClip,
+      initialClip: _activeClip,
     );
 
-    _knightSkin.apply(_slots);
+    _applyActiveSkin();
   }
 
   void _buildCharacterRig() {
@@ -185,267 +188,20 @@ class _SandboxScreenState extends State<SandboxScreen> {
     ];
   }
 
-  void _buildSkins() {
-    // --- Skin 1: Knight (Silver & Royal Blue) ---
-    _knightSkin = Skin(id: 'knight', name: 'Knight Armor');
-    _knightSkin.setAttachment(
-      'slot_head',
-      ShapeAttachment(
-        id: 'knight_helmet',
-        shapeType: ShapeType.capsule,
-        width: 48.0,
-        height: 52.0,
-        offset: vm.Vector3(22.0, 0.0, 0.0),
-        fillColor: 0xFF90A4AE, // Silver-blue steel
-        strokeColor: 0xFF37474F,
-        strokeWidth: 3.0,
-      ),
-    );
-    _knightSkin.setAttachment(
-      'slot_torso',
-      ShapeAttachment(
-        id: 'knight_breastplate',
-        shapeType: ShapeType.rectangle,
-        width: 80.0,
-        height: 48.0,
-        offset: vm.Vector3(45.0, 0.0, 0.0),
-        fillColor: 0xFF1976D2, // Royal Blue
-        strokeColor: 0xFF0D47A1,
-        strokeWidth: 3.0,
-      ),
-    );
-    _knightSkin.setAttachment(
-      'slot_upper_arm_r',
-      ShapeAttachment(
-        id: 'knight_arm_r',
-        shapeType: ShapeType.capsule,
-        width: 50.0,
-        height: 20.0,
-        offset: vm.Vector3(25.0, 0.0, 0.0),
-        fillColor: 0xFFB0BEC5,
-        strokeColor: 0xFF37474F,
-      ),
-    );
-    _knightSkin.setAttachment(
-      'slot_forearm_r',
-      ShapeAttachment(
-        id: 'knight_gauntlet_r',
-        shapeType: ShapeType.capsule,
-        width: 45.0,
-        height: 18.0,
-        offset: vm.Vector3(22.0, 0.0, 0.0),
-        fillColor: 0xFF78909C,
-        strokeColor: 0xFF263238,
-      ),
-    );
-    _knightSkin.setAttachment(
-      'slot_upper_arm_l',
-      ShapeAttachment(
-        id: 'knight_arm_l',
-        shapeType: ShapeType.capsule,
-        width: 50.0,
-        height: 20.0,
-        offset: vm.Vector3(25.0, 0.0, 0.0),
-        fillColor: 0xFF90A4AE,
-        strokeColor: 0xFF37474F,
-      ),
-    );
-    _knightSkin.setAttachment(
-      'slot_forearm_l',
-      ShapeAttachment(
-        id: 'knight_gauntlet_l',
-        shapeType: ShapeType.capsule,
-        width: 45.0,
-        height: 18.0,
-        offset: vm.Vector3(22.0, 0.0, 0.0),
-        fillColor: 0xFF607D8B,
-        strokeColor: 0xFF263238,
-      ),
-    );
-    _knightSkin.setAttachment(
-      'slot_thigh_r',
-      ShapeAttachment(
-        id: 'knight_thigh_r',
-        shapeType: ShapeType.capsule,
-        width: 55.0,
-        height: 22.0,
-        offset: vm.Vector3(28.0, 0.0, 0.0),
-        fillColor: 0xFFB0BEC5,
-        strokeColor: 0xFF37474F,
-      ),
-    );
-    _knightSkin.setAttachment(
-      'slot_shin_r',
-      ShapeAttachment(
-        id: 'knight_greave_r',
-        shapeType: ShapeType.capsule,
-        width: 50.0,
-        height: 18.0,
-        offset: vm.Vector3(25.0, 0.0, 0.0),
-        fillColor: 0xFF78909C,
-        strokeColor: 0xFF263238,
-      ),
-    );
-    _knightSkin.setAttachment(
-      'slot_thigh_l',
-      ShapeAttachment(
-        id: 'knight_thigh_l',
-        shapeType: ShapeType.capsule,
-        width: 55.0,
-        height: 22.0,
-        offset: vm.Vector3(28.0, 0.0, 0.0),
-        fillColor: 0xFF90A4AE,
-        strokeColor: 0xFF37474F,
-      ),
-    );
-    _knightSkin.setAttachment(
-      'slot_shin_l',
-      ShapeAttachment(
-        id: 'knight_greave_l',
-        shapeType: ShapeType.capsule,
-        width: 50.0,
-        height: 18.0,
-        offset: vm.Vector3(25.0, 0.0, 0.0),
-        fillColor: 0xFF607D8B,
-        strokeColor: 0xFF263238,
-      ),
-    );
-
-    // --- Skin 2: Sci-Fi Robot (Cyberpunk Orange & Slate Black) ---
-    _robotSkin = Skin(id: 'robot', name: 'Cybernetic Robot');
-    _robotSkin.setAttachment(
-      'slot_head',
-      ShapeAttachment(
-        id: 'robot_sensor_head',
-        shapeType: ShapeType.rectangle,
-        width: 44.0,
-        height: 44.0,
-        offset: vm.Vector3(22.0, 0.0, 0.0),
-        fillColor: 0xFFFF6D00, // Cyber Neon Orange
-        strokeColor: 0xFF212121,
-        strokeWidth: 3.5,
-      ),
-    );
-    _robotSkin.setAttachment(
-      'slot_torso',
-      ShapeAttachment(
-        id: 'robot_chassis',
-        shapeType: ShapeType.rectangle,
-        width: 82.0,
-        height: 54.0,
-        offset: vm.Vector3(45.0, 0.0, 0.0),
-        fillColor: 0xFF263238, // Slate Black
-        strokeColor: 0xFFFF6D00,
-        strokeWidth: 3.0,
-      ),
-    );
-    _robotSkin.setAttachment(
-      'slot_upper_arm_r',
-      ShapeAttachment(
-        id: 'robot_arm_r',
-        shapeType: ShapeType.rectangle,
-        width: 48.0,
-        height: 16.0,
-        offset: vm.Vector3(24.0, 0.0, 0.0),
-        fillColor: 0xFFFF9E80,
-        strokeColor: 0xFF212121,
-      ),
-    );
-    _robotSkin.setAttachment(
-      'slot_forearm_r',
-      ShapeAttachment(
-        id: 'robot_plasma_r',
-        shapeType: ShapeType.rectangle,
-        width: 45.0,
-        height: 22.0,
-        offset: vm.Vector3(22.0, 0.0, 0.0),
-        fillColor: 0xFFFF3D00,
-        strokeColor: 0xFF212121,
-      ),
-    );
-    _robotSkin.setAttachment(
-      'slot_upper_arm_l',
-      ShapeAttachment(
-        id: 'robot_arm_l',
-        shapeType: ShapeType.rectangle,
-        width: 48.0,
-        height: 16.0,
-        offset: vm.Vector3(24.0, 0.0, 0.0),
-        fillColor: 0xFFFF9E80,
-        strokeColor: 0xFF212121,
-      ),
-    );
-    _robotSkin.setAttachment(
-      'slot_forearm_l',
-      ShapeAttachment(
-        id: 'robot_plasma_l',
-        shapeType: ShapeType.rectangle,
-        width: 45.0,
-        height: 22.0,
-        offset: vm.Vector3(22.0, 0.0, 0.0),
-        fillColor: 0xFFFF3D00,
-        strokeColor: 0xFF212121,
-      ),
-    );
-    _robotSkin.setAttachment(
-      'slot_thigh_r',
-      ShapeAttachment(
-        id: 'robot_hydraulics_thigh_r',
-        shapeType: ShapeType.capsule,
-        width: 55.0,
-        height: 18.0,
-        offset: vm.Vector3(28.0, 0.0, 0.0),
-        fillColor: 0xFF37474F,
-        strokeColor: 0xFFFF6D00,
-      ),
-    );
-    _robotSkin.setAttachment(
-      'slot_shin_r',
-      ShapeAttachment(
-        id: 'robot_piston_shin_r',
-        shapeType: ShapeType.rectangle,
-        width: 50.0,
-        height: 16.0,
-        offset: vm.Vector3(25.0, 0.0, 0.0),
-        fillColor: 0xFFFFAB40,
-        strokeColor: 0xFF212121,
-      ),
-    );
-    _robotSkin.setAttachment(
-      'slot_thigh_l',
-      ShapeAttachment(
-        id: 'robot_hydraulics_thigh_l',
-        shapeType: ShapeType.capsule,
-        width: 55.0,
-        height: 18.0,
-        offset: vm.Vector3(28.0, 0.0, 0.0),
-        fillColor: 0xFF37474F,
-        strokeColor: 0xFFFF6D00,
-      ),
-    );
-    _robotSkin.setAttachment(
-      'slot_shin_l',
-      ShapeAttachment(
-        id: 'robot_piston_shin_l',
-        shapeType: ShapeType.rectangle,
-        width: 50.0,
-        height: 16.0,
-        offset: vm.Vector3(25.0, 0.0, 0.0),
-        fillColor: 0xFFFFAB40,
-        strokeColor: 0xFF212121,
-      ),
-    );
+  void _applyActiveSkin() {
+    final skin = CharacterRegistry.getSkin(_activeCharacterId, _activeViewAngle);
+    skin.apply(_slots);
+    _controller.applySkin(skin);
+    setState(() {});
   }
 
-  void _buildAnimations() {
-    // 1. Walk Cycle (1.0s loop)
-    _walkClip = AnimationClip(
+  AnimationClip _createPresetWalkClip() {
+    return AnimationClip(
       id: 'walk',
       name: 'Walk Cycle',
       duration: 1.0,
       isLooping: true,
       tracks: [
-        // Legs swinging opposite
         BoneAnimationTrack(
           boneId: 'thigh_r',
           rotationKeys: [
@@ -480,7 +236,6 @@ class _SandboxScreenState extends State<SandboxScreen> {
             const Keyframe(time: 1.0, value: 0.1),
           ],
         ),
-        // Arms swinging in opposition to legs
         BoneAnimationTrack(
           boneId: 'upper_arm_r',
           rotationKeys: [
@@ -497,22 +252,12 @@ class _SandboxScreenState extends State<SandboxScreen> {
             const Keyframe(time: 1.0, value: math.pi / 2.0 - 0.4),
           ],
         ),
-        // Torso slight bounce
-        BoneAnimationTrack(
-          boneId: 'torso',
-          positionKeys: [
-            Keyframe(time: 0.0, value: vm.Vector3(0.0, -10.0, 0.0)),
-            Keyframe(time: 0.25, value: vm.Vector3(0.0, -5.0, 0.0)),
-            Keyframe(time: 0.5, value: vm.Vector3(0.0, -10.0, 0.0)),
-            Keyframe(time: 0.75, value: vm.Vector3(0.0, -5.0, 0.0)),
-            Keyframe(time: 1.0, value: vm.Vector3(0.0, -10.0, 0.0)),
-          ],
-        ),
       ],
     );
+  }
 
-    // 2. Wave Hand Animation
-    _waveClip = AnimationClip(
+  AnimationClip _createPresetWaveClip() {
+    return AnimationClip(
       id: 'wave',
       name: 'Wave Hand',
       duration: 1.2,
@@ -540,6 +285,225 @@ class _SandboxScreenState extends State<SandboxScreen> {
     );
   }
 
+  // Record a keyframe at the current scrubber timestamp
+  void _recordKeyframe() {
+    final t = double.parse((_controller.currentTime % _activeClip.duration).toStringAsFixed(2));
+
+    for (final bone in _skeleton.bones) {
+      final track = _activeClip.getOrCreateTrack(bone.id);
+      track.addRotationKey(Keyframe(time: t, value: bone.localRotation));
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Keyframe recorded at ${t.toStringAsFixed(2)}s for ${_skeleton.bones.length} bones!'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: const Color(0xFF00E676),
+      ),
+    );
+    setState(() {});
+  }
+
+  // Delete keyframe nearest to current timestamp
+  void _deleteCurrentKeyframe() {
+    final t = _controller.currentTime % _activeClip.duration;
+    for (final track in _activeClip.tracks) {
+      track.rotationKeys.removeWhere((k) => (k.time - t).abs() < 0.05);
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Keyframe removed near ${t.toStringAsFixed(2)}s'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    setState(() {});
+  }
+
+  // Create a new blank clip
+  void _showNewClipDialog() {
+    final nameController = TextEditingController(text: 'Custom Animation');
+    final durationController = TextEditingController(text: '1.5');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Create New Animation Clip'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Animation Name'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: durationController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Duration (seconds)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              final dur = double.tryParse(durationController.text) ?? 1.5;
+              final newClip = AnimationClip(
+                id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+                name: nameController.text.trim(),
+                duration: dur,
+                isLooping: true,
+                tracks: [],
+              );
+              setState(() {
+                _activeClip = newClip;
+                _controller.setClip(_activeClip);
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Export JSON dialog
+  void _showExportDialog() {
+    final jsonString = _activeClip.toPrettyJson();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.code, color: Color(0xFF00E676)),
+            const SizedBox(width: 8),
+            Text('Export "${_activeClip.name}" JSON'),
+          ],
+        ),
+        content: SizedBox(
+          width: 550,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This standard JSON format can be imported into Easymator or any Flutter game engine:',
+                style: TextStyle(fontSize: 12, color: Colors.white70),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                height: 240,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A0C0E),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    jsonString,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          FilledButton.icon(
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Copy to Clipboard'),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: jsonString));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Animation JSON copied to clipboard!'),
+                  backgroundColor: Color(0xFF4A90E2),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Import JSON dialog
+  void _showImportDialog() {
+    final inputController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.file_upload, color: Color(0xFF4A90E2)),
+            SizedBox(width: 8),
+            Text('Import Animation JSON'),
+          ],
+        ),
+        content: SizedBox(
+          width: 550,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Paste an exported .easymate.json snippet below to play it on any character:',
+                style: TextStyle(fontSize: 12, color: Colors.white70),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: inputController,
+                maxLines: 10,
+                decoration: InputDecoration(
+                  hintText: '{\n  "version": "1.0",\n  "name": "My Clip",\n  "duration": 1.2,\n  ...\n}',
+                  filled: true,
+                  fillColor: const Color(0xFF0A0C0E),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              try {
+                final clip = AnimationClip.fromJsonString(inputController.text.trim());
+                setState(() {
+                  _activeClip = clip;
+                  _controller.setClip(clip);
+                  _controller.play();
+                });
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Successfully imported "${clip.name}"!'),
+                    backgroundColor: const Color(0xFF00E676),
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Invalid JSON format: $e'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+            child: const Text('Load & Play'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _applyIK(Offset target) {
     setState(() {
       _ikTarget = target;
@@ -560,55 +524,97 @@ class _SandboxScreenState extends State<SandboxScreen> {
   Widget build(BuildContext context) {
     final selectedBone = _skeleton.findBone(_selectedBoneId ?? '');
 
+    // Collect all unique keyframe timestamps for dope sheet rendering
+    final Set<double> keyframeTimes = {};
+    for (final track in _activeClip.tracks) {
+      for (final k in track.rotationKeys) {
+        keyframeTimes.add(k.time);
+      }
+      for (final k in track.positionKeys) {
+        keyframeTimes.add(k.time);
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 16,
         title: const Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.animation, color: Color(0xFF00E676)),
-            SizedBox(width: 10),
-            Text('Easymator Skeletal Engine Sandbox'),
+            SizedBox(width: 8),
+            Text(
+              'Easymator 2D Studio',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
           ],
         ),
         actions: [
-          Row(
-            children: [
-              const Text('Skin: '),
-              ChoiceChip(
-                label: const Text('Knight'),
-                selected: _activeSkinId == 'knight',
-                onSelected: (val) {
-                  if (val) {
-                    setState(() => _activeSkinId = 'knight');
-                    _controller.applySkin(_knightSkin);
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Robot'),
-                selected: _activeSkinId == 'robot',
-                onSelected: (val) {
-                  if (val) {
-                    setState(() => _activeSkinId = 'robot');
-                    _controller.applySkin(_robotSkin);
-                  }
-                },
-              ),
-              const SizedBox(width: 16),
+          SegmentedButton<String>(
+            showSelectedIcon: false,
+            style: const ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            segments: const [
+              ButtonSegment(value: 'knight', label: Text('Knight', style: TextStyle(fontSize: 12))),
+              ButtonSegment(value: 'robot', label: Text('Robot', style: TextStyle(fontSize: 12))),
+              ButtonSegment(value: 'mage', label: Text('Mage', style: TextStyle(fontSize: 12))),
             ],
+            selected: {_activeCharacterId},
+            onSelectionChanged: (val) {
+              _activeCharacterId = val.first;
+              _applyActiveSkin();
+            },
           ),
+          const SizedBox(width: 8),
+          SegmentedButton<ViewAngle>(
+            showSelectedIcon: false,
+            style: const ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            segments: const [
+              ButtonSegment(value: ViewAngle.front, label: Text('Front', style: TextStyle(fontSize: 12))),
+              ButtonSegment(value: ViewAngle.side, label: Text('Side', style: TextStyle(fontSize: 12))),
+              ButtonSegment(value: ViewAngle.back, label: Text('Back', style: TextStyle(fontSize: 12))),
+            ],
+            selected: {_activeViewAngle},
+            onSelectionChanged: (val) {
+              _activeViewAngle = val.first;
+              _applyActiveSkin();
+            },
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
+            icon: const Icon(Icons.file_upload, size: 16),
+            label: const Text('Import JSON'),
+            onPressed: _showImportDialog,
+          ),
+          const SizedBox(width: 8),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
+            icon: const Icon(Icons.download, size: 16),
+            label: const Text('Export JSON'),
+            onPressed: _showExportDialog,
+          ),
+          const SizedBox(width: 12),
         ],
       ),
       body: Row(
         children: [
-          // ------------------ VIEWPORT ------------------
+          // ------------------ MAIN VIEWPORT ------------------
           Expanded(
             flex: 3,
             child: Container(
-              color: const Color(0xFF0D0F14),
+              color: const Color(0xFF0C0E12),
               child: Stack(
                 children: [
-                  // Subtle Grid Background
                   if (_showGrid) const _GridBackground(),
 
                   // Interactive Viewport with Pan & Zoom
@@ -634,32 +640,45 @@ class _SandboxScreenState extends State<SandboxScreen> {
                     ),
                   ),
 
-                  // Overlay Tooltips & Status Indicator
+                  // Overlay Status Badge
                   Positioned(
                     top: 16,
                     left: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.65),
+                        color: Colors.black.withValues(alpha: 0.75),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.white12),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Rig: ${_skeleton.name} (${_skeleton.bones.length} Bones)',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF00E676),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${_activeCharacterId.toUpperCase()} • ${_activeViewAngle.name.toUpperCase()} VIEW',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Active Skin: ${_activeSkinId.toUpperCase()} (Retargeted)',
-                            style: const TextStyle(color: Color(0xFF00E676), fontSize: 12),
+                            'Active Clip: "${_activeClip.name}" (${_activeClip.duration.toStringAsFixed(1)}s)',
+                            style: const TextStyle(color: Color(0xFF4A90E2), fontSize: 12),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Selected: ${_selectedBoneId ?? "None (Tap bone to select)"}',
+                            'Selected Bone: ${_selectedBoneId ?? "Tap limb to select"}',
                             style: const TextStyle(color: Colors.white70, fontSize: 12),
                           ),
                         ],
@@ -674,6 +693,14 @@ class _SandboxScreenState extends State<SandboxScreen> {
                       top: _ikTarget.dy - 12,
                       child: const Icon(Icons.gps_fixed, color: Colors.amber, size: 24),
                     ),
+
+                  // Bottom Timeline / Dope Sheet Bar
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
+                    child: _buildDopeSheetBar(keyframeTimes),
+                  ),
                 ],
               ),
             ),
@@ -681,118 +708,94 @@ class _SandboxScreenState extends State<SandboxScreen> {
 
           // ------------------ INSPECTOR SIDEBAR ------------------
           Material(
-            color: const Color(0xFF1E222D),
+            color: const Color(0xFF171A21),
             child: SizedBox(
               width: 380,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // 1. Playback Section
-                  _buildSectionHeader('Animation Timeline'),
+                  // Presets Row
+                  _buildSectionHeader('Presets & Clips'),
                   const SizedBox(height: 8),
-                  SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(value: 'walk', label: Text('Walk')),
-                      ButtonSegment(value: 'wave', label: Text('Wave')),
-                      ButtonSegment(value: 'manual', label: Text('Posing')),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ActionChip(
+                        avatar: const Icon(Icons.directions_walk, size: 16),
+                        label: const Text('Walk Cycle'),
+                        onPressed: () {
+                          setState(() {
+                            _activeClip = _createPresetWalkClip();
+                            _controller.setClip(_activeClip);
+                            _controller.play();
+                          });
+                        },
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.waving_hand, size: 16),
+                        label: const Text('Wave Hand'),
+                        onPressed: () {
+                          setState(() {
+                            _activeClip = _createPresetWaveClip();
+                            _controller.setClip(_activeClip);
+                            _controller.play();
+                          });
+                        },
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.add, size: 16),
+                        label: const Text('New Custom Clip'),
+                        onPressed: _showNewClipDialog,
+                      ),
                     ],
-                    selected: {
-                      _controller.currentClip == _walkClip
-                          ? 'walk'
-                          : _controller.currentClip == _waveClip
-                              ? 'wave'
-                              : 'manual'
-                    },
-                    onSelectionChanged: (val) {
-                      final selected = val.first;
-                      if (selected == 'walk') {
-                        _controller.setClip(_walkClip);
-                        _controller.play();
-                      } else if (selected == 'wave') {
-                        _controller.setClip(_waveClip);
-                        _controller.play();
-                      } else {
-                        _controller.setClip(null);
-                      }
-                      setState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Play / Pause / Scrubber
-                  ListenableBuilder(
-                    listenable: _controller,
-                    builder: (context, _) {
-                      return Column(
-                        children: [
-                          Row(
-                            children: [
-                              IconButton.filled(
-                                icon: Icon(_controller.isPlaying ? Icons.pause : Icons.play_arrow),
-                                onPressed: _controller.currentClip != null ? _controller.togglePlayPause : null,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.stop),
-                                onPressed: _controller.currentClip != null ? _controller.stop : null,
-                              ),
-                              Expanded(
-                                child: Slider(
-                                  value: _controller.duration > 0
-                                      ? (_controller.currentTime % _controller.duration)
-                                      : 0.0,
-                                  max: _controller.duration > 0 ? _controller.duration : 1.0,
-                                  onChanged: (val) => _controller.seek(val),
-                                ),
-                              ),
-                              Text(
-                                '${_controller.currentTime.toStringAsFixed(2)}s',
-                                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          // Playback Speed
-                          Wrap(
-                            spacing: 6,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              const Text('Speed: ', style: TextStyle(fontSize: 12)),
-                              for (final speed in [0.25, 0.5, 1.0, 2.0])
-                                ChoiceChip(
-                                  label: Text('${speed}x', style: const TextStyle(fontSize: 11)),
-                                  selected: _controller.playbackSpeed == speed,
-                                  onSelected: (val) {
-                                    if (val) _controller.playbackSpeed = speed;
-                                  },
-                                ),
-                            ],
-                          ),
-                        ],
-                      );
-                    },
                   ),
 
                   const Divider(height: 32),
 
-                  // 2. View Options
+                  // Authoring Actions
+                  _buildSectionHeader('Keyframe Authoring'),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          icon: const Icon(Icons.bookmark_add, size: 16),
+                          label: const Text('Record Keyframe'),
+                          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black),
+                          onPressed: _recordKeyframe,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.outlined(
+                        icon: const Icon(Icons.bookmark_remove, size: 18),
+                        tooltip: 'Delete keyframe at current time',
+                        onPressed: _deleteCurrentKeyframe,
+                      ),
+                    ],
+                  ),
+
+                  const Divider(height: 32),
+
+                  // Layer Toggles
                   _buildSectionHeader('View Layers'),
                   SwitchListTile(
                     title: const Text('Debug Wireframe', style: TextStyle(fontSize: 14)),
-                    subtitle: const Text('Bones, Joints, Pivots', style: TextStyle(fontSize: 12)),
+                    subtitle: const Text('Bones & Joints', style: TextStyle(fontSize: 12)),
                     value: _showDebugWireframe,
                     onChanged: (val) => setState(() => _showDebugWireframe = val),
                     dense: true,
                   ),
                   SwitchListTile(
                     title: const Text('Vector Attachments', style: TextStyle(fontSize: 14)),
-                    subtitle: const Text('Modular Character Skin', style: TextStyle(fontSize: 12)),
+                    subtitle: const Text('Render Active Skin', style: TextStyle(fontSize: 12)),
                     value: _showAttachments,
                     onChanged: (val) => setState(() => _showAttachments = val),
                     dense: true,
                   ),
                   SwitchListTile(
                     title: const Text('Interactive IK Mode', style: TextStyle(fontSize: 14)),
-                    subtitle: const Text('Drag Right Arm via Law of Cosines', style: TextStyle(fontSize: 12)),
+                    subtitle: const Text('Drag Right Arm Target', style: TextStyle(fontSize: 12)),
                     value: _ikMode,
                     onChanged: (val) {
                       setState(() {
@@ -805,10 +808,17 @@ class _SandboxScreenState extends State<SandboxScreen> {
                     },
                     dense: true,
                   ),
+                  SwitchListTile(
+                    title: const Text('Canvas Grid', style: TextStyle(fontSize: 14)),
+                    subtitle: const Text('Background Reference Lines', style: TextStyle(fontSize: 12)),
+                    value: _showGrid,
+                    onChanged: (val) => setState(() => _showGrid = val),
+                    dense: true,
+                  ),
 
                   const Divider(height: 32),
 
-                  // 3. Bone Inspector (Forward Kinematics Sliders)
+                  // Bone Transform Inspector
                   _buildSectionHeader('Selected Bone: ${_selectedBoneId ?? "None"}'),
                   if (selectedBone != null) ...[
                     const SizedBox(height: 8),
@@ -822,7 +832,7 @@ class _SandboxScreenState extends State<SandboxScreen> {
                         setState(() {});
                       },
                     ),
-                    Text('Local Length: ${selectedBone.length.toStringAsFixed(0)} px'),
+                    Text('Bone Length: ${selectedBone.length.toStringAsFixed(0)} px'),
                     Slider(
                       min: 10.0,
                       max: 150.0,
@@ -839,8 +849,7 @@ class _SandboxScreenState extends State<SandboxScreen> {
                       padding: EdgeInsets.symmetric(vertical: 20),
                       child: Center(
                         child: Text(
-                          'Tap any bone in the viewport to inspect & pose it with sliders.',
-                          textAlign: TextAlign.center,
+                          'Tap any limb in the viewport to pose it.',
                           style: TextStyle(color: Colors.white54, fontSize: 13),
                         ),
                       ),
@@ -851,6 +860,106 @@ class _SandboxScreenState extends State<SandboxScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Bottom Floating Dope Sheet Bar
+  Widget _buildDopeSheetBar(Set<double> keyframeTimes) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF171A21).withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12),
+        boxShadow: const [
+          BoxShadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 4)),
+        ],
+      ),
+      child: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) {
+          final curTime = _controller.duration > 0
+              ? (_controller.currentTime % _controller.duration)
+              : 0.0;
+          final maxDur = _controller.duration > 0 ? _controller.duration : 1.0;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  IconButton.filled(
+                    icon: Icon(_controller.isPlaying ? Icons.pause : Icons.play_arrow),
+                    onPressed: _activeClip.tracks.isNotEmpty ? _controller.togglePlayPause : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.stop),
+                    onPressed: _controller.stop,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${curTime.toStringAsFixed(2)}s / ${maxDur.toStringAsFixed(1)}s',
+                    style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Keyframe markers & Scrubber
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: Stack(
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          // Dope sheet diamonds
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SizedBox(
+                                width: constraints.maxWidth,
+                                height: 48,
+                                child: Stack(
+                                  children: [
+                                    for (final kt in keyframeTimes)
+                                      Positioned(
+                                        left: (kt / maxDur).clamp(0.0, 1.0) * (constraints.maxWidth - 24),
+                                        top: 17,
+                                        child: const Icon(Icons.diamond, color: Color(0xFF00E676), size: 14),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          // Slider scrubber
+                          Slider(
+                            value: curTime,
+                            max: maxDur,
+                            onChanged: (val) => _controller.seek(val),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Playback speed
+                  Wrap(
+                    spacing: 4,
+                    children: [
+                      for (final s in [0.5, 1.0, 2.0])
+                        ChoiceChip(
+                          label: Text('${s}x', style: const TextStyle(fontSize: 11)),
+                          selected: _controller.playbackSpeed == s,
+                          onSelected: (val) {
+                            if (val) _controller.playbackSpeed = s;
+                          },
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -868,7 +977,6 @@ class _SandboxScreenState extends State<SandboxScreen> {
   }
 }
 
-/// Subtle blueprint/dark grid background pattern.
 class _GridBackground extends StatelessWidget {
   const _GridBackground();
 
