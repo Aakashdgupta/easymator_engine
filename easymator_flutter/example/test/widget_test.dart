@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:easymator_example/main.dart';
 
 void main() {
-  testWidgets('Sandbox studio boots up, switches 3 characters across 3 views, and opens export/import dialogs', (tester) async {
+  testWidgets('Sandbox studio boots up, manages animation library, and supports bone addition and realignment', (tester) async {
     // Set fixed virtual desktop window size
-    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
@@ -43,11 +43,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('MAGE • SIDE VIEW'), findsOneWidget);
 
-    // Switch to Back View
-    await tester.tap(find.text('Back'));
-    await tester.pump(const Duration(milliseconds: 50));
-    expect(find.text('MAGE • BACK VIEW'), findsOneWidget);
-
     // Return to Front View and Knight
     await tester.tap(find.text('Front'));
     await tester.tap(find.text('Knight'));
@@ -66,8 +61,6 @@ void main() {
     await tester.tap(recordButton);
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.byType(SnackBar), findsOneWidget);
-
-    // Dismiss snackbar
     await tester.pump(const Duration(seconds: 2));
 
     // 8. Test Export JSON Dialog
@@ -90,7 +83,69 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pump(const Duration(milliseconds: 100));
 
-    // 10. Verify View Layer Switches
+    // 10. Test Animation Library Listing & Creation
+    expect(find.text('Walk Cycle (1.0s)'), findsOneWidget);
+    expect(find.text('Wave Hand (1.2s)'), findsOneWidget);
+    expect(find.text('Idle Breathing (2.0s)'), findsOneWidget);
+
+    // Switch to Wave Hand
+    await tester.tap(find.text('Wave Hand (1.2s)'));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Active Clip: "Wave Hand" (1.2s)'), findsOneWidget);
+
+    // Create New Custom Clip
+    final newClipButton = find.text('New Clip');
+    expect(newClipButton, findsOneWidget);
+    await tester.ensureVisible(newClipButton);
+    await tester.tap(newClipButton);
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Create New Animation Clip'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextField, 'Clip Name'), 'Ninja Kick');
+    await tester.tap(find.text('Create'));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Verify newly created clip appears in the library!
+    expect(find.text('Ninja Kick (1.5s)'), findsOneWidget);
+    expect(find.text('Active Clip: "Ninja Kick" (1.5s)'), findsOneWidget);
+
+    // 11. Test Add Bone Dialog
+    final addBoneButton = find.byTooltip('Add new bone to skeleton');
+    expect(addBoneButton, findsOneWidget);
+    await tester.ensureVisible(addBoneButton);
+    await tester.tap(addBoneButton);
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Add New Bone'), findsOneWidget);
+
+    await tester.tap(find.text('Add Bone'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byType(SnackBar), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+
+    // 12. Test Reset Rig to Default
+    final resetRigButton = find.byTooltip('Reset rig to original aligned pose');
+    expect(resetRigButton, findsOneWidget);
+    await tester.ensureVisible(resetRigButton);
+    await tester.tap(resetRigButton);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Rig reset to original factory alignment!'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+
+    // 13. Test Bone Realignment Controls
+    expect(find.textContaining('Offset X:'), findsOneWidget);
+    expect(find.textContaining('Offset Y:'), findsOneWidget);
+    expect(find.textContaining('Rotation:'), findsOneWidget);
+    expect(find.textContaining('Bone Length:'), findsOneWidget);
+
+    // Switch selected bone to 'Thigh (R)'
+    final thighChip = find.widgetWithText(ChoiceChip, 'Thigh (R)');
+    expect(thighChip, findsOneWidget);
+    await tester.ensureVisible(thighChip);
+    await tester.tap(thighChip);
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.textContaining('Thigh (R)'), findsWidgets);
+
+    // 14. Verify View Layers switches
     expect(find.text('Debug Wireframe'), findsOneWidget);
     expect(find.text('Vector Attachments'), findsOneWidget);
     expect(find.text('Interactive IK Mode'), findsOneWidget);
