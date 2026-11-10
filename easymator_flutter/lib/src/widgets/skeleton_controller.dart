@@ -117,4 +117,46 @@ class SkeletonController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Manually adjusts a bone's visual length.
+  void setBoneLength(String boneId, double length) {
+    final bone = skeleton.findBone(boneId);
+    if (bone != null) {
+      bone.length = length;
+      bone.markDirty();
+      skeleton.updateWorldTransforms();
+      notifyListeners();
+    }
+  }
+
+  /// Adds a new bone under [parentId] and triggers hierarchy recalculation.
+  bool addBone(Bone bone, {required String parentId}) {
+    final success = skeleton.addBone(bone, parentId: parentId);
+    if (success) {
+      notifyListeners();
+    }
+    return success;
+  }
+
+  /// Removes a bone by its [boneId].
+  bool removeBone(String boneId) {
+    final success = skeleton.removeBone(boneId);
+    if (success) {
+      notifyListeners();
+    }
+    return success;
+  }
+
+  /// Re-parents a bone under a new parent bone.
+  bool reparentBone(String boneId, String newParentId) {
+    if (boneId == skeleton.root.id || boneId == newParentId) return false;
+    final bone = skeleton.findBone(boneId);
+    final newParent = skeleton.findBone(newParentId);
+    if (bone == null || newParent == null) return false;
+    newParent.addChild(bone);
+    skeleton.refreshHierarchy();
+    skeleton.updateWorldTransforms(force: true);
+    notifyListeners();
+    return true;
+  }
 }

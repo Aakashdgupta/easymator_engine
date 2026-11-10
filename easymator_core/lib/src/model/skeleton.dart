@@ -54,6 +54,30 @@ class Skeleton {
     _rebuildBoneIndex();
   }
 
+  /// Adds a new [bone] under the parent identified by [parentId].
+  ///
+  /// Returns `true` if successful, or `false` if the parent bone was not found.
+  bool addBone(Bone bone, {required String parentId}) {
+    final parent = findBone(parentId);
+    if (parent == null) return false;
+    parent.addChild(bone);
+    _rebuildBoneIndex();
+    updateWorldTransforms(force: true);
+    return true;
+  }
+
+  /// Removes a bone by its [boneId] from the hierarchy.
+  /// Cannot remove the root bone. Returns `true` if removed.
+  bool removeBone(String boneId) {
+    if (boneId == root.id) return false;
+    final bone = findBone(boneId);
+    if (bone == null || bone.parent == null) return false;
+    bone.parent!.removeChild(bone);
+    _rebuildBoneIndex();
+    updateWorldTransforms(force: true);
+    return true;
+  }
+
   /// Evaluates and updates the world transform matrices for the entire skeleton.
   void updateWorldTransforms({bool force = false}) {
     root.updateWorldTransform(force: force);

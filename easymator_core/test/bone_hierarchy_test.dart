@@ -112,5 +112,42 @@ void main() {
       final hit3 = skeleton.hitTest(Vector3(50.0, 50.0, 0.0), threshold: 10.0);
       expect(hit3, isNull);
     });
+
+    test('Dynamic bone addition and removal updates hierarchy and indexing', () {
+      final root = Bone(id: 'root', localPosition: Vector3(100.0, 100.0, 0.0), length: 50.0);
+      final skeleton = Skeleton(id: 'skel', root: root);
+
+      expect(skeleton.bones.length, equals(1));
+      expect(skeleton.findBone('root'), isNotNull);
+
+      // Add child bone
+      final arm = Bone(id: 'arm', length: 40.0);
+      final addedArm = skeleton.addBone(arm, parentId: 'root');
+      expect(addedArm, isTrue);
+      expect(skeleton.bones.length, equals(2));
+      expect(skeleton.findBone('arm'), isNotNull);
+      expect(arm.parent, equals(root));
+
+      // Add sub-child bone
+      final hand = Bone(id: 'hand', length: 20.0);
+      final addedHand = skeleton.addBone(hand, parentId: 'arm');
+      expect(addedHand, isTrue);
+      expect(skeleton.bones.length, equals(3));
+      expect(hand.parent, equals(arm));
+
+      // Cannot add under nonexistent parent
+      final orphan = Bone(id: 'orphan');
+      expect(skeleton.addBone(orphan, parentId: 'nonexistent'), isFalse);
+
+      // Remove intermediate bone (arm removes both arm and hand)
+      final removedArm = skeleton.removeBone('arm');
+      expect(removedArm, isTrue);
+      expect(skeleton.findBone('arm'), isNull);
+      expect(skeleton.findBone('hand'), isNull);
+      expect(skeleton.bones.length, equals(1));
+
+      // Cannot remove root bone
+      expect(skeleton.removeBone('root'), isFalse);
+    });
   });
 }
