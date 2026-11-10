@@ -48,7 +48,7 @@ class _SandboxScreenState extends State<SandboxScreen> {
   String _activeSkinId = 'knight';
   bool _showDebugWireframe = true;
   bool _showAttachments = true;
-  bool _showGrid = true;
+  final bool _showGrid = true;
   bool _ikMode = false;
   Offset _ikTarget = const Offset(280, 220);
 
@@ -449,52 +449,52 @@ class _SandboxScreenState extends State<SandboxScreen> {
         BoneAnimationTrack(
           boneId: 'thigh_r',
           rotationKeys: [
-            Keyframe(time: 0.0, value: math.pi / 2.0 - 0.5),
-            Keyframe(time: 0.5, value: math.pi / 2.0 + 0.5),
-            Keyframe(time: 1.0, value: math.pi / 2.0 - 0.5),
+            const Keyframe(time: 0.0, value: math.pi / 2.0 - 0.5),
+            const Keyframe(time: 0.5, value: math.pi / 2.0 + 0.5),
+            const Keyframe(time: 1.0, value: math.pi / 2.0 - 0.5),
           ],
         ),
         BoneAnimationTrack(
           boneId: 'shin_r',
           rotationKeys: [
-            Keyframe(time: 0.0, value: 0.2),
-            Keyframe(time: 0.25, value: 0.8),
-            Keyframe(time: 0.5, value: 0.1),
-            Keyframe(time: 1.0, value: 0.2),
+            const Keyframe(time: 0.0, value: 0.2),
+            const Keyframe(time: 0.25, value: 0.8),
+            const Keyframe(time: 0.5, value: 0.1),
+            const Keyframe(time: 1.0, value: 0.2),
           ],
         ),
         BoneAnimationTrack(
           boneId: 'thigh_l',
           rotationKeys: [
-            Keyframe(time: 0.0, value: math.pi / 2.0 + 0.5),
-            Keyframe(time: 0.5, value: math.pi / 2.0 - 0.5),
-            Keyframe(time: 1.0, value: math.pi / 2.0 + 0.5),
+            const Keyframe(time: 0.0, value: math.pi / 2.0 + 0.5),
+            const Keyframe(time: 0.5, value: math.pi / 2.0 - 0.5),
+            const Keyframe(time: 1.0, value: math.pi / 2.0 + 0.5),
           ],
         ),
         BoneAnimationTrack(
           boneId: 'shin_l',
           rotationKeys: [
-            Keyframe(time: 0.0, value: 0.1),
-            Keyframe(time: 0.5, value: 0.2),
-            Keyframe(time: 0.75, value: 0.8),
-            Keyframe(time: 1.0, value: 0.1),
+            const Keyframe(time: 0.0, value: 0.1),
+            const Keyframe(time: 0.5, value: 0.2),
+            const Keyframe(time: 0.75, value: 0.8),
+            const Keyframe(time: 1.0, value: 0.1),
           ],
         ),
         // Arms swinging in opposition to legs
         BoneAnimationTrack(
           boneId: 'upper_arm_r',
           rotationKeys: [
-            Keyframe(time: 0.0, value: math.pi / 2.0 + 0.4),
-            Keyframe(time: 0.5, value: math.pi / 2.0 - 0.4),
-            Keyframe(time: 1.0, value: math.pi / 2.0 + 0.4),
+            const Keyframe(time: 0.0, value: math.pi / 2.0 + 0.4),
+            const Keyframe(time: 0.5, value: math.pi / 2.0 - 0.4),
+            const Keyframe(time: 1.0, value: math.pi / 2.0 + 0.4),
           ],
         ),
         BoneAnimationTrack(
           boneId: 'upper_arm_l',
           rotationKeys: [
-            Keyframe(time: 0.0, value: math.pi / 2.0 - 0.4),
-            Keyframe(time: 0.5, value: math.pi / 2.0 + 0.4),
-            Keyframe(time: 1.0, value: math.pi / 2.0 - 0.4),
+            const Keyframe(time: 0.0, value: math.pi / 2.0 - 0.4),
+            const Keyframe(time: 0.5, value: math.pi / 2.0 + 0.4),
+            const Keyframe(time: 1.0, value: math.pi / 2.0 - 0.4),
           ],
         ),
         // Torso slight bounce
@@ -521,19 +521,19 @@ class _SandboxScreenState extends State<SandboxScreen> {
         BoneAnimationTrack(
           boneId: 'upper_arm_r',
           rotationKeys: [
-            Keyframe(time: 0.0, value: -math.pi / 3.0),
-            Keyframe(time: 0.6, value: -math.pi / 2.8),
-            Keyframe(time: 1.2, value: -math.pi / 3.0),
+            const Keyframe(time: 0.0, value: -math.pi / 3.0),
+            const Keyframe(time: 0.6, value: -math.pi / 2.8),
+            const Keyframe(time: 1.2, value: -math.pi / 3.0),
           ],
         ),
         BoneAnimationTrack(
           boneId: 'forearm_r',
           rotationKeys: [
-            Keyframe(time: 0.0, value: -0.6),
-            Keyframe(time: 0.3, value: 0.4),
-            Keyframe(time: 0.6, value: -0.6),
-            Keyframe(time: 0.9, value: 0.4),
-            Keyframe(time: 1.2, value: -0.6),
+            const Keyframe(time: 0.0, value: -0.6),
+            const Keyframe(time: 0.3, value: 0.4),
+            const Keyframe(time: 0.6, value: -0.6),
+            const Keyframe(time: 0.9, value: 0.4),
+            const Keyframe(time: 1.2, value: -0.6),
           ],
         ),
       ],
