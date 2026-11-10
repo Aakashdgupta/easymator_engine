@@ -43,7 +43,6 @@ easymator_engine/
 │   ├── LICENSE
 │   └── README.md
 │
-├── launch_sandbox.bat                   # 1-click launcher for the visual sandbox
 ├── LICENSE                              # Master MIT License
 └── TODO.md                              # Roadmap & Milestone tracker
 ```
@@ -139,12 +138,10 @@ The repository includes a comprehensive desktop/web studio sandbox in `easymator
 - **JSON Pipeline**: 1-click import and export of animations.
 
 ### Launching the Sandbox:
-- **Windows**: Double-click [`launch_sandbox.bat`](launch_sandbox.bat)
-- **Terminal**:
-  ```bash
-  cd easymator_flutter/example
-  flutter run -d chrome
-  ```
+```bash
+cd easymator_flutter/example
+flutter run -d chrome # Or: flutter run -d windows
+```
 
 ---
 
